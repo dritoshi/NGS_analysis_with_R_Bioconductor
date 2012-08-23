@@ -1,0 +1,295 @@
+---
+layout: page
+title: "ChIP-seq analysis with R/Bioconductor"
+date: 2012-08-13 18:00
+comments: true
+sharing: true
+footer: true
+---
+RとBioconductorでNGS解析: 3限 ChIP-seq データ解析
+
+## はじめに
+この文章は統合データベース講習会：AJACSみちのく2「RとBioconductorを使ったNGS解析」3限目「ChIP-seq データ解析の基礎」の講義資料です。
+
+この文章の著作権は二階堂愛にあります。ファイルのダウンロード、印刷、複製、大量の印刷は自由におこなってよいです。企業、アカデミアに関わらず講義や勉強会で配布してもよいです。ただし販売したり営利目的の集まりで使用してはいけません。ここで許可した行為について二階堂愛に連絡や報告する必要はありません。常に最新版を配布したいので**ネット上での再配布や転載は禁止**します。ネット上でのリンクはご自由にどうぞ。内容についての問い合わせはお気軽にメールしてください。
+
+## 対象
+ここでは、Rの基礎知識がある人を対象に、RとBioconductor を使った ChIP-seq データ解析について説明します。基本的な Unix コマンドが利用できることが前提です。
+
+## 学習範囲
+ChIP-seq を取り扱う。Peak解析については、Rではなく、ほかのオープンソースプログラムを利用して解析を行う。Rと Bioconductor ではその後の高次解析から論文の図の作成に至るまでを紹介します。
+
+## ChIP-seq
+illumina HiSeq は、塩基とその精度を表す quality value のセットで出力します。これは fastq file と呼ばれており、すべての解析のスタートになります。
+
+### マッピング
+まずこのファイルに含まれるシーケンスリードをリファレンスゲノムにマッピングすることで、どのゲノム領域由来のリードだったのかを調べます。ここでは、代表的なマッピングソフトである bowtie を用いて、マッピングを行います。
+```
+bowtie -t -p 8 -n 3 -m 1 -a --best --strata --sam mm9 -q Oct4.fastq  > Oct4.bowtie.sam
+bowtie -t -p 8 -n 3 -m 1 -a --best --strata --sam mm9 -q Sox2.fastq  > Sox2.bowtie.sam
+bowtie -t -p 8 -n 3 -m 1 -a --best --strata --sam mm9 -q Nanog.fastq > Nanog.bowtie.sam
+bowtie -t -p 8 -n 3 -m 1 -a --best --strata --sam mm9 -q GFP.fastq   > GFP.bowtie.sam
+```
+各ディレクトリに *.sam というファイルができます。これはDNAショートリードとゲノム上の座標と保存するファイル形式です。これを bam file に変換します。
+```
+samtools view -bS Oct4.bowtie.sam > Oct4.bowtie.bam
+samtools sort  	  Oct4.bowtie.bam Oct4.bowtie.sort
+samtools index 	  Oct4.bowtie.sort.bam
+rm Oct4.bowtie.bam
+```
+変換された bam file を使って、binding site の場所を予測します。
+```
+macs2 -t results/bowtie/Oct4/Oct4.bowtie.sort.rmRepeat.bam -c results/ bowtie/GFP/GFP.bowtie.sort.rmRepeat.bam -f BAM -g mm -n Oct4 -B -q 0.01
+```
+
+## 高次解析
+### 準備
+ここから R と Bioconductor を使っていきます。必要なパッケージをインストールします。まずRを起動します。
+```
+sudo R
+```
+Rに以下のコマンドを入力しパッケージをインストールします。
+```
+install.packages("corrplot")
+source("http://bioconductor.org/biocLite.R")
+biocLite("ChIPpeakAnno")
+biocLite("org.Mm.eg.db")
+biocLite("BSgenome.Mmusculus.UCSC.mm9")
+biocLite("rGADEM")
+biocLite("MotIV")
+biocLite("TSS.mouse.NCBIM37")
+```
+以下のパッケージをダウンロードしインストールします。
+* [QuGAcomp](https://github.com/dritoshi/QuGAcomp/blob/master/QuGAcomp_0.99.1.tar.gz?raw=true)
+```
+sudo R CMD INSTALL QuGAcomp_0.99.2.tar.gz
+```
+これで準備は終了です。
+
+### ピークデータの操作
+ChIP-seq のデータは、区間データと呼ばれるデータ構造です。区間データとは、数直線上の2つの座標からなるデータです。ChIP-seq のピーク解析で得られたデータは、あるゲノムのある領域(区間)にタンパク質結合があるかどうかを示すデータ構造になっています。
+
+MACS の場合は、bed file 形式の区間データが出力されます。このデータをRで読み込んでみます。
+
+```{r, cache=TRUE}
+library("ChIPpeakAnno")
+
+oct4.df  <- read.table("results/Oct4_peaks.bed",  header = FALSE)
+sox2.df  <- read.table("results/Sox2_peaks.bed",  header = FALSE)
+nanog.df <- read.table("results/Nanog_peaks.bed", header = FALSE)
+is(oct4.df)
+head(oct4.df)
+
+oct4.gr  <- BED2RangedData(oct4.df,  header = FALSE)
+sox2.gr  <- BED2RangedData(sox2.df,  header = FALSE)
+nanog.gr <- BED2RangedData(nanog.df, header = FALSE)
+is(oct4.gr)
+head(oct4.gr)
+```
+
+ファイルからいったん **data frame** として bed file を読み込みます。それを、*BED2RangedData* を用いて *RangedData* オブジェクトに変換します。このデータ構造にしておくことで、Bioconductor が提供する様々な区間計算やバイオインフォマティクスの機能が使えるようになります。
+
+### ピークデータのアノテーション
+それぞれのピークがどの遺伝子の側にあるのかを計算します。TSS (transcript start site) からのピークまでの距離を計算します。
+
+```{r, cache=TRUE}
+data(TSS.mouse.NCBIM37)
+
+oct4.anno <- annotatePeakInBatch(
+  RangedData(oct4.gr),
+  AnnotationData = TSS.mouse.NCBIM37,
+  output = "both"
+)
+is(oct4.anno)
+head(oct4.anno)
+```
+
+遺伝子とピークの位置の関係をサマリーします。
+
+```{r, cache=TRUE}
+oct4.anno.table <- table(as.data.frame(oct4.anno)$insideFeature)
+is(oct4.anno.table)
+head(oct4.anno.table)
+```
+可視化します。
+```{r, cache=TRUE}
+barplot(oct4.anno.table)
+```
+これをそれぞれの転写因子の ChIP-seq データで描画することで、結合領域の好みを知ることができます。*pie* を使えばパイチャートを描くこともできますが、今回のように、別々の転写因子のデータを比較する場合には、pie chart は使うべきではありません。人間は長さの比較に対して、面積の比較をするのが難しいためです。
+
+次にピークがアサインされた遺伝子になんらかの特徴があるか見てみましょう。これは ChIP-seq の実験がうまくいっているかざっくりと評価するためにも重要です。ここでは頻出する Gene ontology を挙げます。
+```{r, cache=TRUE}
+library(org.Mm.eg.db)
+
+oct4.go <- getEnrichedGO(
+  oct4.anno,
+  orgAnn    = "org.Mm.eg.db",
+  maxP      = 0.01,
+  multiAdj  = TRUE,
+  minGOterm = 10,
+  multiAdjMethod = "BH"
+)
+
+oct4.bp.goterm <- unique(oct4.go$bp[order(oct4.go$bp[,10]), c(2,10)])
+oct4.cc.goterm <- unique(oct4.go$cc[order(oct4.go$cc[,10]), c(2,10)])
+oct4.mf.goterm <- unique(oct4.go$mf[order(oct4.go$mf[,10]), c(2,10)])
+
+is(oct4.mf.goterm)
+head(oct4.mf.goterm)
+```
+
+### ピーク領域の配列を得る
+ピーク領域のDNA配列を得ることは2つの意味で重要になります。ひとつは、その配列を用いて、PCRプライマーを設計し、ChIP産物に対して、ChIP-qPCR を行うことで、解析結果の評価が実験によって行うことができます。これはピーク解析のスコアの閾値を決定するうえでも重要です。
+
+もうひとつはピークの配列のなかに頻出するDNA配列パターン、すなわち、DNAモチーフを発見するために必要となるからです。DNAモチーフを発見することで、タンパク質がどのようなDNA配列を認識して結合するのかを明らかにすることができます。またすでにモチーフ配列が既知の場合は、その含有率を知ることで、ChIP-seq の実験がうまくいっているかを評価することができます。
+
+では配列を得てみます。
+```{r, cache=TRUE}
+library("BSgenome.Mmusculus.UCSC.mm9")
+
+oct4.peaksWithSeqs <- getAllPeakSequence(
+  oct4.gr,
+  upstream   = 0,
+  downstream = 0,
+  genome = Mmusculus
+)
+
+is(oct4.peaksWithSeqs)
+head(oct4.peaksWithSeqs)
+write2FASTA(oct4.peaksWithSeqs, file="results/oct4.peaksWithSeqs.fa")
+```
+最終的には、FASTA 形式でファイルに保存しています。
+
+### ピーク領域に頻出するDNAモチーフを得る
+では、前項で作成した配列に含まれるDNAモチーフを発見してみます。
+```{r, cache=TRUE}
+library("rGADEM")
+
+oct4.seqs  <- read.DNAStringSet("results/oct4.peaksWithSeqs.fa", "fasta")
+oct4.motif <- GADEM(oct4.seqs, verbose=1, genome = Mmusculus)
+
+is(oct4.seqs)
+head(oct4.seqs)
+
+is(oct4.motif)
+head(oct4.motif)
+```
+
+次は発見したモチーフが既知のモチーフに似ているかどうかを調べます。ここでは、JASPAR という転写因子結合モチーフのデータベースに対し、発見したモチーフに似たものを検索します。実際には、PWM の相関係数を計算しています。
+```{r, cache=TRUE}
+library("MotIV")
+
+## prep. database
+path <- system.file(package = "MotIV")
+jaspar        <- readPWMfile(file.path(path, "extdata/jaspar2010.txt"))
+jaspar.scores <- readDBScores(
+  file.path(path, "extdata/jaspar2010_PCC_SWU.scores")
+)
+
+## search motifs
+oct4.motif.pwms <- getPWM(oct4.motif)
+oct4.jaspar <- motifMatch(
+  inputPWM = oct4.motif.pwms,
+  align = "SWU",
+  cc    = "PCC",
+  database = jaspar,
+  DBscores = jaspar.scores,
+  top = 5
+)
+
+## output results with sequence logos
+plot(oct4.jaspar, ncol = 2, top = 5, rev = FALSE,
+     main = "Oct4 ChIP-seq", bysim = TRUE)
+```
+
+### 異なるChIP-seqデータの比較
+異なる転写因子やエピジェネティクス因子の ChIP-seq のデータを比較したり、peak 解析ソフトによる結果の比較をしたい場合がある。このときは、それぞれの peak データを取り込んで、その重なりの数を数えるのが一般的である。
+
+より定量的に比較するには、それぞれのピークの位置にどのぐらい相関があるかを計算する。まずピークの区間データを、ある座標に peka が存在するかどうかを 0, 1 で示した localization vector と呼ばれるデータに変換する。次に、適切な大きさに、区間ごとに binning (window analysis, smoothing) した後、そのベクター間の相関を計算する。
+
+以下では3つの転写因子の peak データをピアソンの積率相関係数によって比較する方法である。これは 2 x 2 contingency table (cross table) の phi coefficient と等価である。一般的に、localization vector の相関は高くならないので注意が必要である。
+
+```{r}
+library("QuGAcomp")
+library("corrplot")
+
+genome.length.file <- file.path(system.file(package="QuGAcomp"), "data", "mm9.info")
+
+oct4.bed.file <- file.path(
+  system.file(package="QuGAcomp"),
+  "data",
+  "GSM288346_ES_Oct4.mm9.header.bed"
+)
+sox2.bed.file <- file.path(
+  system.file(package="QuGAcomp"),
+  "data",
+  "GSM288347_ES_Sox2.mm9.header.bed"
+)
+nanog.bed.file <- file.path(
+  system.file(package="QuGAcomp"),
+  "data",
+  "GSM288345_ES_Nanog.mm9.header.bed"
+)
+
+oct4.gr  <- loadBedFile(oct4.bed.file,  genome.length.file)
+sox2.gr  <- loadBedFile(sox2.bed.file,  genome.length.file)
+nanog.gr <- loadBedFile(nanog.bed.file, genome.length.file)
+oct4.fat  <- fat(oct4.gr,  200)
+sox2.fat  <- fat(sox2.gr,  200)
+nanog.fat <- fat(nanog.gr, 200)
+
+oct4.unistd  <- unifyStrand(oct4.fat)
+sox2.unistd  <- unifyStrand(sox2.fat)
+nanog.unistd <- unifyStrand(nanog.fat)
+
+oct4.cov  <- coverage(oct4.unistd)
+sox2.cov  <- coverage(sox2.unistd)
+nanog.cov <- coverage(nanog.unistd)
+
+oct4.bin500  <- lapply( oct4.cov,  function(x) rleBinning(x, 500) )
+sox2.bin500  <- lapply( sox2.cov,  function(x) rleBinning(x, 500) )
+nanog.bin500 <- lapply( nanog.cov, function(x) rleBinning(x, 500) )
+
+oct4.bin500  <- flatRleList(oct4.bin500)
+sox2.bin500  <- flatRleList(sox2.bin500)
+nanog.bin500 <- flatRleList(nanog.bin500)
+
+quga.oct4.sox2  <- qugacomp(oct4.bin500,  sox2.bin500)
+quga.oct4.nanog <- qugacomp(oct4.bin500, nanog.bin500)
+quga.sox2.nanog <- qugacomp(sox2.bin500, nanog.bin500)
+
+num <- 3
+mat.cor <- matrix(0, nrow=num, ncol=num)
+rownames(mat.cor) <- c("Oct4", "Sox2", "Nanog")
+colnames(mat.cor) <- c("Oct4", "Sox2", "Nanog")
+
+diag(mat.cor) <- rep(1, num)
+
+mat.cor[1,2] <- mat.cor[2,1] <- pearsonCoef(quga.oct4.sox2)
+mat.cor[1,3] <- mat.cor[3,1] <- pearsonCoef(quga.oct4.nanog)
+mat.cor[2,3] <- mat.cor[3,2] <- pearsonCoef(quga.sox2.nanog)
+
+mat.cor.max <- max( mat.cor[upper.tri(mat.cor, diag=F)] )
+mat.cor.min <- min( mat.cor[upper.tri(mat.cor, diag=F)] )
+
+corrplot(
+  mat.cor,
+  method = "circle", type = "full",
+  diag = FALSE, outline = FALSE,
+  addcolorlabel = "bottom",
+  cl.lim = c(mat.cor.min, mat.cor.max), cl.ratio = 0.2
+)
+```
+## 次に学ぶこと
+ここでは、シーケンス実験のQCについては扱っていませんでした。ChIP-seq の場合はシーケンスライブラリを作成するときに、PCR 増幅をしますが、元々サンプルの準備が難しい実験ですので、PCRサイクルが多くなってしまう場合があります。また、ChIP assay 自体が抗体やサンプルによって、十分にタンパク質結合領域を enrich できない場合もあります。そのため、QCは非常に重要なステップになります。
+
+特に、ChIP-qPCR によって enrichnment が確認された領域、DNA断片が落ちてこない領域などの情報を事前に入手し、その領域にリードがどの程度含まれるかを確認する必要があります。また、まったく同一のリードというのは確率的にあまり出てこないはずですが、これがどのぐらい含まれるかを定量することも大切です。もし PCR のサイクル数が過剰な場合は、この重複リード率が増える傾向にあります。
+
+また、ChIP-seq は、RNA-seq よりもゲノムのリピート領域にマップされる遺伝子が多い傾向があります。このとき、リピート領域にマップされたリードが、真のタンパク質結合サイトに含まれるリードに比べて、かなり多くなります。そのため、peak 解析のスコアの計算に影響を与える場合があるので、マッピングが終了後に、これらを除くことが重要です。
+
+このような問題点の指標になる数値やデータ操作、解析についても R/Bioconductor で計算することが可能です。このようなステップを入れることで、より正確な解析と実験へのフィードバックができるデータ解析パイプラインが作成することができるでしょう。
+
+## 実行環境
+```{r}
+sessionInfo()
+```
