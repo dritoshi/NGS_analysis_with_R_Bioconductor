@@ -59,11 +59,13 @@ biocLite("rGADEM")
 biocLite("MotIV")
 biocLite("TSS.mouse.NCBIM37")
 ```
-以下のパッケージをダウンロードしインストールします。
-* [QuGAcomp](https://github.com/dritoshi/QuGAcomp/blob/master/QuGAcomp_0.99.1.tar.gz?raw=true)
+以下のパッケージをダウンロードしインストールします。[QuGAcomp](https://github.com/dritoshi/QuGAcomp/blob/master/QuGAcomp_0.99.1.tar.gz?raw=true)
 ```
 sudo R CMD INSTALL QuGAcomp_0.99.2.tar.gz
 ```
+
+最後にデータをダウンロードします。[https://github.com/dritoshi/NGS_analysis_with_R_Bioconductor/tree/master/doc/results](https://github.com/dritoshi/NGS_analysis_with_R_Bioconductor/tree/master/doc/results) から *.bed ファイルを保存しておきます。
+
 これで準備は終了です。
 
 ### ピークデータの操作

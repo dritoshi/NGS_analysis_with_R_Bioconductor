@@ -59,11 +59,13 @@ biocLite("rGADEM")
 biocLite("MotIV")
 biocLite("TSS.mouse.NCBIM37")
 ```
-以下のパッケージをダウンロードしインストールします。
-* [QuGAcomp](https://github.com/dritoshi/QuGAcomp/blob/master/QuGAcomp_0.99.1.tar.gz?raw=true)
+以下のパッケージをダウンロードしインストールします。[QuGAcomp](https://github.com/dritoshi/QuGAcomp/blob/master/QuGAcomp_0.99.1.tar.gz?raw=true)
 ```
 sudo R CMD INSTALL QuGAcomp_0.99.2.tar.gz
 ```
+
+最後にデータをダウンロードします。[https://github.com/dritoshi/NGS_analysis_with_R_Bioconductor/tree/master/doc/results](https://github.com/dritoshi/NGS_analysis_with_R_Bioconductor/tree/master/doc/results) から *.bed ファイルを保存しておきます。
+
 これで準備は終了です。
 
 ### ピークデータの操作
@@ -153,7 +155,7 @@ head(oct4.gr)
 {% highlight r %}
 data(TSS.mouse.NCBIM37)
 
-oct4.anno <- annotatePeakInBatch(oct4.gr, AnnotationData = TSS.mouse.NCBIM37, 
+oct4.anno <- annotatePeakInBatch(RangedData(oct4.gr), AnnotationData = TSS.mouse.NCBIM37, 
     output = "both")
 {% endhighlight %}
 
@@ -401,7 +403,7 @@ head(oct4.anno.table)
 ##            768
 {% endhighlight %}
 
-
+可視化します。
 
 {% highlight r %}
 barplot(oct4.anno.table)
@@ -409,8 +411,7 @@ barplot(oct4.anno.table)
 
 ![center](/images/NGS-R-Bioconductor-3rd/unnamed-chunk-4.png) 
 
-
-pie を使えばパイチャートを描くこともできますが、今回のように、別々の転写因子のデータを比較する場合には、pie chart は使うべきではありません。人間は長さの比較に対して、面積の比較をするのが難しいためです。
+これをそれぞれの転写因子の ChIP-seq データで描画することで、結合領域の好みを知ることができます。*pie* を使えばパイチャートを描くこともできますが、今回のように、別々の転写因子のデータを比較する場合には、pie chart は使うべきではありません。人間は長さの比較に対して、面積の比較をするのが難しいためです。
 
 次にピークがアサインされた遺伝子になんらかの特徴があるか見てみましょう。これは ChIP-seq の実験がうまくいっているかざっくりと評価するためにも重要です。ここでは頻出する Gene ontology を挙げます。
 
@@ -816,14 +817,14 @@ sessionInfo()
 ## [28] cummeRbund_1.99.2                  
 ## [29] fastcluster_1.1.6                  
 ## [30] reshape2_1.2.1                     
-## [31] RSQLite_0.11.1                     
-## [32] DBI_0.2-5                          
-## [33] BrainStars_1.0.0                   
-## [34] Biobase_2.16.0                     
-## [35] BiocGenerics_0.2.0                 
-## [36] RCurl_1.91-1                       
-## [37] bitops_1.0-4.1                     
-## [38] ggplot2_0.9.1                      
+## [31] ggplot2_0.9.1                      
+## [32] RSQLite_0.11.1                     
+## [33] DBI_0.2-5                          
+## [34] BrainStars_1.0.0                   
+## [35] Biobase_2.16.0                     
+## [36] BiocGenerics_0.2.0                 
+## [37] RCurl_1.91-1                       
+## [38] bitops_1.0-4.1                     
 ## [39] knitr_0.7.6                        
 ## [40] stringr_0.6.1                      
 ## [41] RColorBrewer_1.0-5                 
