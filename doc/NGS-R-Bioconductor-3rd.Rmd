@@ -57,7 +57,6 @@ biocLite("org.Mm.eg.db")
 biocLite("BSgenome.Mmusculus.UCSC.mm9")
 biocLite("rGADEM")
 biocLite("MotIV")
-biocLite("TSS.mouse.NCBIM37")
 ```
 以下のパッケージをダウンロードしインストールします。[QuGAcomp](https://github.com/dritoshi/QuGAcomp/blob/master/QuGAcomp_0.99.1.tar.gz?raw=true)
 ```

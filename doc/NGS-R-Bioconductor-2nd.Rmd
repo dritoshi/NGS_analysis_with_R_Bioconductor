@@ -16,8 +16,6 @@ RとBioconductorでNGS解析: 2限 RNA-seq データ解析
 ## 対象
 ここでは、Rの基礎知識がある人を対象に、RとBioconductor を使った RNA-seq データ解析について説明します。基本的な Unix コマンドが利用できることが望ましいです。
 
-## 準備
-
 ## 学習範囲
 RNA-seq を取り扱います。データのQCやマッピング、発現量の定量については、Rではなく、ほかのオープンソースプログラムを利用して解析を行います。Rと Bioconductor ではその後の高次解析から論文の図の作成に至るまでを紹介します。データについては Bioconductor のパッケージに添付されている RNA-seq データを使います。
 
@@ -33,13 +31,14 @@ illumina HiSeq は、塩基とその精度を表す quality value のセット�
 
 -p は計算に利用する CPU cores の数を整数でします。以下の例では、8 CPU cores あるコンピュータを使うので、8 を指定していますが、お使いのコンピュータに合せて変えてください。
 ```
-tophat -p 8 -r 100 -o output_dir/sample01 bowtie2_indexes/mm9 sample01_1.fastq sample01_2.fastq
-tophat -p 8 -r 100 -o output_dir/sample02 bowtie2_indexes/mm9 sample02_1.fastq sample02_2.fastq
-tophat -p 8 -r 100 -o output_dir/sample03 bowtie2_indexes/mm9 sample03_1.fastq sample03_2.fastq
+tophat -p 8 -r 100 -o output_dir/iPS_01 bowtie2_indexes/mm9 iPS_01_1.fastq iPS_01_2.fastq 
+tophat -p 8 -r 100 -o output_dir/iPS_02 bowtie2_indexes/mm9 iPS_02_1.fastq iPS_02_2.fastq 
 
-tophat -p 8 -r 100 -o output_dir/control01 bowtie2_indexes/mm9 control01_1.fastq control01_2.fastq
-tophat -p 8 -r 100 -o output_dir/control02 bowtie2_indexes/mm9 control02_1.fastq control02_2.fastq
-tophat -p 8 -r 100 -o output_dir/control03 bowtie2_indexes/mm9 control03_1.fastq control03_2.fastq
+tophat -p 8 -r 100 -o output_dir/hESC_01 bowtie2_indexes/mm9 hESC_01_1.fastq sample03_2.fastq
+tophat -p 8 -r 100 -o output_dir/hESC_02 bowtie2_indexes/mm9 hESC_02_1.fastq hESC_02_2.fastq
+
+tophat -p 8 -r 100 -o output_dir/Fibroblast_01 bowtie2_indexes/mm9 Fibroblast_01_1.fastq Fibroblast_01_2.fastq
+tophat -p 8 -r 100 -o output_dir/Fibroblast_01 bowtie2_indexes/mm9 Fibroblast_02_1.fastq Fibroblast_02_2.fastq
 ```
 
 それぞれのディレクトリに accepted_hits.bam というファイルができます。これはゲノムの座標とショートリードを格納するバイナリファイルの形式で、非常によく使われる形式です。ちなみに、この bam file を操作するツールとして有名なのが [samtools](http://samtools.sourceforge.net/) です。
@@ -47,22 +46,23 @@ tophat -p 8 -r 100 -o output_dir/control03 bowtie2_indexes/mm9 control03_1.fastq
 ### 発現量の定量
 次にマッピングデータから発現量を定量します。出力された bam file を利用します。まず bam file を適切な名前に rename します。
 ```
-mv sample01/accepted_hits.bam sample01/sample01.bam
-mv sample02/accepted_hits.bam sample02/sample02.bam
-mv sample03/accepted_hits.bam sample03/sample03.bam
-mv control01/accepted_hits.bam control01/control01.bam
-mv control02/accepted_hits.bam control02/control02.bam
-mv control03/accepted_hits.bam control03/control03.bam
+cd output_dir
+mv iPS_01/accepted_hits.bam iPS_01.bam
+mv iPS_02/accepted_hits.bam iPS_02.bam
+
+mv hESC_01/accepted_hits.bam hESC_01.bam
+mv hESC_02/accepted_hits.bam hESC_02.bam
+
+mv Fibroblast_01/accepted_hits.bam Fibroblast_01.bam
+mv Fibroblast_02/accepted_hits.bam Fibroblast_02.bam
 ```
 次に、cufflinks の cuffdiff コマンド使って、発現量の定量と発現差解析を行います。-p は CPU cores の数です。-L はサンプルのラベルで好きな文字列を指定できますが、今後の解析にそのまま利用し、作成される図にもそのまま表示されるものなので、慎重に選んでください。-o は結果を出力するディレクトリ名です。そのあとに、sample, control の順番にファイルを指定します。replication しているサンプルは、コンマで区切ります。sample と control の区切りはスペース文字であることに注意してください。ensembl_gene.gtf はリファレンスとなるトランスクリプトームの情報です。この GTF file はイルミナ社のウェブサイト iGenome からダウンロードできます。詳しくはこちら。[http://cufflinks.cbcb.umd.edu/igenomes.html](http://cufflinks.cbcb.umd.edu/igenomes.html)
 
 この計算はサンプル数に応じてメモリを大量に消費します。Linux や Mac の場合は、top コマンドで確認してください。
 ```
 cuffdiff -p 24 ensembl_gene.gtf
-  -L sample01,sample02,sample03,control01,control02,control03
-  -o results 
-  sample01/sample01.bam,   sample02/sample02.bam,   sample03/sample03.bam 
-  control01/control01.bam, control02/control02.bam, control03/control03.bam
+  -L iPS_01,iPS_02,hESC_01,hESC_02,Fibroblast_01,Fibroblast_02
+  -o results iPS_01.bam,iPS_2.bam hESC_1.bam,hESC_2.bam Fibroblast_01.bam,Fibroblast_02.bam
 ```
 
 results ディレクトリに様々なファイルが出力されているのがわかると思います。
@@ -70,7 +70,12 @@ results ディレクトリに様々なファイルが出力されているのが
 ### 発現量解析
 cummeRbund を利用して様々な発現量データ解析を行います。
 
-まず cummeRbund をインストールします。
+まず、fastcluster パッケージをインストールします。 
+```{r}
+install.packages("fastcluster")
+```
+次に、cummeRbund をインストールします。
+
 ```
 curl -O http://bioconductor.org/packages/release/bioc/src/contrib/cummeRbund_1.2.0.tar.gz
 sudo R CMD INSTALL cummeRbund_1.2.0.tar.gz
@@ -84,7 +89,17 @@ curl -O http://bioconductor.org/packages/release/bioc/bin/macosx/leopard/contrib
 RStudio の Tools -> Install Packages -> Install From: Package Archive File (*.tgz) を選択。Package Archive: で cummeRbund_1.2.0.tgz を指定して、Install をクリックします。
 
 ### 発現データの読み込み
-まず cummeRbund を使って、R に cuffdiff で定量した発現量を読み込みます。
+まず cummeRbund を使って、R に cuffdiff で定量した発現量を読み込みます。cuffdiff の結果は、outdir に保存されているはずです。そこにあるファイルを読み込んで、cuff.db というファイルに保存します。
+
+```
+library("cummeRbund")
+dir <- "outdir"
+cuff <- readCufflinks(dir)
+is(cuff)
+cuff
+```
+
+今回は、すでに cuff.db を作ってありますので、それを利用します。cuff.db の場所は、*system.file* で調べることができます。
 
 ```{r}
 library("cummeRbund")
@@ -93,7 +108,7 @@ cuff <- readCufflinks(dir)
 is(cuff)
 cuff
 ```
-ここでは、dir に入っている cuffdiff の結果を読み込み、**CuffSet** オブジェクトを生成しています。このオブジェクトに、いろいろな操作をすることで、データを取り出したり、統計計算を行います。
+ここでは、dir に入っている cuffdiff の結果を読み込み、cuff.db というファイルを生成します。すでにある場合は、それを読み込んで、Rのワークスペース上に、**CuffSet** オブジェクトを生成します。このオブジェクトに、いろいろな操作をすることで、データを取り出したり、統計計算を行います。
 
 まず、この **CuffSet** オブジェクトから、遺伝子ごとの発現量の情報を取り出します。**CuffSet** にはアイソフォームやプロモーターの情報も含まれています。ここでは、遺伝子ごとのデータを選択的に取り出します。
 ```{r}

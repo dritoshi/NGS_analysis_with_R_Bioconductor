@@ -57,7 +57,6 @@ biocLite("org.Mm.eg.db")
 biocLite("BSgenome.Mmusculus.UCSC.mm9")
 biocLite("rGADEM")
 biocLite("MotIV")
-biocLite("TSS.mouse.NCBIM37")
 ```
 以下のパッケージをダウンロードしインストールします。[QuGAcomp](https://github.com/dritoshi/QuGAcomp/blob/master/QuGAcomp_0.99.1.tar.gz?raw=true)
 ```
@@ -659,6 +658,68 @@ plot(oct4.jaspar, ncol = 2, top = 5, rev = FALSE, main = "Oct4 ChIP-seq", bysim 
 
 {% highlight r %}
 library("QuGAcomp")
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: IRanges
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: BiocGenerics
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Attaching package: 'BiocGenerics'
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## The following object(s) are masked from 'package:stats':
+## 
+## xtabs
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## The following object(s) are masked from 'package:base':
+## 
+## anyDuplicated, cbind, colnames, duplicated, eval, Filter, Find, get,
+## intersect, lapply, Map, mapply, mget, order, paste, pmax, pmax.int, pmin,
+## pmin.int, Position, rbind, Reduce, rep.int, rownames, sapply, setdiff,
+## table, tapply, union, unique
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Attaching package: 'IRanges'
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## The following object(s) are masked from 'package:plyr':
+## 
+## compact, desc, rename
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: GenomicRanges
+{% endhighlight %}
+
+
+
+{% highlight r %}
 library("corrplot")
 
 genome.length.file <- file.path(system.file(package = "QuGAcomp"), "data", "mm9.info")
@@ -783,59 +844,18 @@ sessionInfo()
 ## [1] ja_JP.UTF-8/ja_JP.UTF-8/ja_JP.UTF-8/C/ja_JP.UTF-8/ja_JP.UTF-8
 ## 
 ## attached base packages:
-## [1] grid      splines   datasets  utils     stats     graphics  grDevices
-## [8] methods   base     
+## [1] datasets  utils     stats     graphics  grDevices methods   base     
 ## 
 ## other attached packages:
-##  [1] corrplot_0.60                      
-##  [2] QuGAcomp_0.99.2                    
-##  [3] ChIPpeakAnno_2.4.0                 
-##  [4] limma_3.12.1                       
-##  [5] org.Hs.eg.db_2.7.1                 
-##  [6] GO.db_2.7.1                        
-##  [7] BSgenome.Ecoli.NCBI.20080805_1.3.17
-##  [8] multtest_2.12.0                    
-##  [9] biomaRt_2.12.0                     
-## [10] gplots_2.11.0                      
-## [11] KernSmooth_2.23-8                  
-## [12] caTools_1.13                       
-## [13] gdata_2.11.0                       
-## [14] gtools_2.7.0                       
-## [15] org.Mm.eg.db_2.7.1                 
-## [16] AnnotationDbi_1.18.1               
-## [17] BSgenome.Mmusculus.UCSC.mm9_1.3.17 
-## [18] rGADEM_2.4.0                       
-## [19] seqLogo_1.22.0                     
-## [20] BSgenome_1.24.0                    
-## [21] GenomicRanges_1.8.12               
-## [22] Biostrings_2.24.1                  
-## [23] IRanges_1.14.4                     
-## [24] MotIV_1.10.0                       
-## [25] Hmisc_3.9-3                        
-## [26] survival_2.36-14                   
-## [27] cluster_1.14.2                     
-## [28] cummeRbund_1.99.2                  
-## [29] fastcluster_1.1.6                  
-## [30] reshape2_1.2.1                     
-## [31] ggplot2_0.9.1                      
-## [32] RSQLite_0.11.1                     
-## [33] DBI_0.2-5                          
-## [34] BrainStars_1.0.0                   
-## [35] Biobase_2.16.0                     
-## [36] BiocGenerics_0.2.0                 
-## [37] RCurl_1.91-1                       
-## [38] bitops_1.0-4.1                     
-## [39] knitr_0.7.6                        
-## [40] stringr_0.6.1                      
-## [41] RColorBrewer_1.0-5                 
-## [42] MASS_7.3-20                        
-## [43] plyr_1.7.1                         
-## [44] BiocInstaller_1.4.7                
+##  [1] corrplot_0.60        QuGAcomp_0.99.2      GenomicRanges_1.8.12
+##  [4] IRanges_1.14.4       BiocGenerics_0.2.0   knitr_0.7.6         
+##  [7] stringr_0.6.1        RColorBrewer_1.0-5   MASS_7.3-20         
+## [10] plyr_1.7.1           BiocInstaller_1.4.7 
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] colorspace_1.1-1 dichromat_1.2-4  digest_0.5.2     evaluate_0.4.2  
-##  [5] formatR_0.6      labeling_0.1     lattice_0.20-6   memoise_0.1     
-##  [9] munsell_0.3      proto_0.3-9.2    RJSONIO_0.98-1   scales_0.2.1    
-## [13] stats4_2.15.1    tools_2.15.1     XML_3.9-4
+##  [5] formatR_0.6      ggplot2_0.9.1    grid_2.15.1      labeling_0.1    
+##  [9] memoise_0.1      munsell_0.3      proto_0.3-9.2    reshape2_1.2.1  
+## [13] scales_0.2.1     stats4_2.15.1    tools_2.15.1
 {% endhighlight %}
 

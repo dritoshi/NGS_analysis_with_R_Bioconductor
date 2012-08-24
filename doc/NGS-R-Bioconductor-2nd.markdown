@@ -16,8 +16,6 @@ RとBioconductorでNGS解析: 2限 RNA-seq データ解析
 ## 対象
 ここでは、Rの基礎知識がある人を対象に、RとBioconductor を使った RNA-seq データ解析について説明します。基本的な Unix コマンドが利用できることが望ましいです。
 
-## 準備
-
 ## 学習範囲
 RNA-seq を取り扱います。データのQCやマッピング、発現量の定量については、Rではなく、ほかのオープンソースプログラムを利用して解析を行います。Rと Bioconductor ではその後の高次解析から論文の図の作成に至るまでを紹介します。データについては Bioconductor のパッケージに添付されている RNA-seq データを使います。
 
@@ -33,13 +31,14 @@ illumina HiSeq は、塩基とその精度を表す quality value のセット�
 
 -p は計算に利用する CPU cores の数を整数でします。以下の例では、8 CPU cores あるコンピュータを使うので、8 を指定していますが、お使いのコンピュータに合せて変えてください。
 ```
-tophat -p 8 -r 100 -o output_dir/sample01 bowtie2_indexes/mm9 sample01_1.fastq sample01_2.fastq
-tophat -p 8 -r 100 -o output_dir/sample02 bowtie2_indexes/mm9 sample02_1.fastq sample02_2.fastq
-tophat -p 8 -r 100 -o output_dir/sample03 bowtie2_indexes/mm9 sample03_1.fastq sample03_2.fastq
+tophat -p 8 -r 100 -o output_dir/iPS_01 bowtie2_indexes/mm9 iPS_01_1.fastq iPS_01_2.fastq 
+tophat -p 8 -r 100 -o output_dir/iPS_02 bowtie2_indexes/mm9 iPS_02_1.fastq iPS_02_2.fastq 
 
-tophat -p 8 -r 100 -o output_dir/control01 bowtie2_indexes/mm9 control01_1.fastq control01_2.fastq
-tophat -p 8 -r 100 -o output_dir/control02 bowtie2_indexes/mm9 control02_1.fastq control02_2.fastq
-tophat -p 8 -r 100 -o output_dir/control03 bowtie2_indexes/mm9 control03_1.fastq control03_2.fastq
+tophat -p 8 -r 100 -o output_dir/hESC_01 bowtie2_indexes/mm9 hESC_01_1.fastq sample03_2.fastq
+tophat -p 8 -r 100 -o output_dir/hESC_02 bowtie2_indexes/mm9 hESC_02_1.fastq hESC_02_2.fastq
+
+tophat -p 8 -r 100 -o output_dir/Fibroblast_01 bowtie2_indexes/mm9 Fibroblast_01_1.fastq Fibroblast_01_2.fastq
+tophat -p 8 -r 100 -o output_dir/Fibroblast_01 bowtie2_indexes/mm9 Fibroblast_02_1.fastq Fibroblast_02_2.fastq
 ```
 
 それぞれのディレクトリに accepted_hits.bam というファイルができます。これはゲノムの座標とショートリードを格納するバイナリファイルの形式で、非常によく使われる形式です。ちなみに、この bam file を操作するツールとして有名なのが [samtools](http://samtools.sourceforge.net/) です。
@@ -47,22 +46,23 @@ tophat -p 8 -r 100 -o output_dir/control03 bowtie2_indexes/mm9 control03_1.fastq
 ### 発現量の定量
 次にマッピングデータから発現量を定量します。出力された bam file を利用します。まず bam file を適切な名前に rename します。
 ```
-mv sample01/accepted_hits.bam sample01/sample01.bam
-mv sample02/accepted_hits.bam sample02/sample02.bam
-mv sample03/accepted_hits.bam sample03/sample03.bam
-mv control01/accepted_hits.bam control01/control01.bam
-mv control02/accepted_hits.bam control02/control02.bam
-mv control03/accepted_hits.bam control03/control03.bam
+cd output_dir
+mv iPS_01/accepted_hits.bam iPS_01.bam
+mv iPS_02/accepted_hits.bam iPS_02.bam
+
+mv hESC_01/accepted_hits.bam hESC_01.bam
+mv hESC_02/accepted_hits.bam hESC_02.bam
+
+mv Fibroblast_01/accepted_hits.bam Fibroblast_01.bam
+mv Fibroblast_02/accepted_hits.bam Fibroblast_02.bam
 ```
 次に、cufflinks の cuffdiff コマンド使って、発現量の定量と発現差解析を行います。-p は CPU cores の数です。-L はサンプルのラベルで好きな文字列を指定できますが、今後の解析にそのまま利用し、作成される図にもそのまま表示されるものなので、慎重に選んでください。-o は結果を出力するディレクトリ名です。そのあとに、sample, control の順番にファイルを指定します。replication しているサンプルは、コンマで区切ります。sample と control の区切りはスペース文字であることに注意してください。ensembl_gene.gtf はリファレンスとなるトランスクリプトームの情報です。この GTF file はイルミナ社のウェブサイト iGenome からダウンロードできます。詳しくはこちら。[http://cufflinks.cbcb.umd.edu/igenomes.html](http://cufflinks.cbcb.umd.edu/igenomes.html)
 
 この計算はサンプル数に応じてメモリを大量に消費します。Linux や Mac の場合は、top コマンドで確認してください。
 ```
 cuffdiff -p 24 ensembl_gene.gtf
-  -L sample01,sample02,sample03,control01,control02,control03
-  -o results 
-  sample01/sample01.bam,   sample02/sample02.bam,   sample03/sample03.bam 
-  control01/control01.bam, control02/control02.bam, control03/control03.bam
+  -L iPS_01,iPS_02,hESC_01,hESC_02,Fibroblast_01,Fibroblast_02
+  -o results iPS_01.bam,iPS_2.bam hESC_1.bam,hESC_2.bam Fibroblast_01.bam,Fibroblast_02.bam
 ```
 
 results ディレクトリに様々なファイルが出力されているのがわかると思います。
@@ -70,7 +70,22 @@ results ディレクトリに様々なファイルが出力されているのが
 ### 発現量解析
 cummeRbund を利用して様々な発現量データ解析を行います。
 
-まず cummeRbund をインストールします。
+まず、fastcluster パッケージをインストールします。 
+
+{% highlight r %}
+install.packages("fastcluster")
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## 
+## The downloaded binary packages are in
+## 	/var/folders/cz/cny0ysmx205dnj0y2_34k8cc0000gn/T//RtmpFvk1Xm/downloaded_packages
+{% endhighlight %}
+
+次に、cummeRbund をインストールします。
+
 ```
 curl -O http://bioconductor.org/packages/release/bioc/src/contrib/cummeRbund_1.2.0.tar.gz
 sudo R CMD INSTALL cummeRbund_1.2.0.tar.gz
@@ -84,11 +99,84 @@ curl -O http://bioconductor.org/packages/release/bioc/bin/macosx/leopard/contrib
 RStudio の Tools -> Install Packages -> Install From: Package Archive File (*.tgz) を選択。Package Archive: で cummeRbund_1.2.0.tgz を指定して、Install をクリックします。
 
 ### 発現データの読み込み
-まず cummeRbund を使って、R に cuffdiff で定量した発現量を読み込みます。
+まず cummeRbund を使って、R に cuffdiff で定量した発現量を読み込みます。cuffdiff の結果は、outdir に保存されているはずです。そこにあるファイルを読み込んで、cuff.db というファイルに保存します。
+
+```
+library("cummeRbund")
+dir <- "outdir"
+cuff <- readCufflinks(dir)
+is(cuff)
+cuff
+```
+
+今回は、すでに cuff.db を作ってありますので、それを利用します。cuff.db の場所は、*system.file* で調べることができます。
 
 
 {% highlight r %}
 library("cummeRbund")
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: RSQLite
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: DBI
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: ggplot2
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: reshape2
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Loading required package: fastcluster
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Attaching package: 'fastcluster'
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## The following object(s) are masked from 'package:stats':
+## 
+## hclust
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## Attaching package: 'cummeRbund'
+{% endhighlight %}
+
+
+
+{% highlight text %}
+## The following object(s) are masked from 'package:plyr':
+## 
+## count
+{% endhighlight %}
+
+
+
+{% highlight r %}
 dir <- system.file("extdata", package = "cummeRbund")
 cuff <- readCufflinks(dir)
 is(cuff)
@@ -120,7 +208,7 @@ cuff
 ## 	 990 relCDS
 {% endhighlight %}
 
-ここでは、dir に入っている cuffdiff の結果を読み込み、**CuffSet** オブジェクトを生成しています。このオブジェクトに、いろいろな操作をすることで、データを取り出したり、統計計算を行います。
+ここでは、dir に入っている cuffdiff の結果を読み込み、cuff.db というファイルを生成します。すでにある場合は、それを読み込んで、Rのワークスペース上に、**CuffSet** オブジェクトを生成します。このオブジェクトに、いろいろな操作をすることで、データを取り出したり、統計計算を行います。
 
 まず、この **CuffSet** オブジェクトから、遺伝子ごとの発現量の情報を取り出します。**CuffSet** にはアイソフォームやプロモーターの情報も含まれています。ここでは、遺伝子ごとのデータを選択的に取り出します。
 
@@ -160,7 +248,7 @@ dens <- csDensity(my.genes)
 print(dens)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-3.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-4.png) 
 
 
 サンプルを平均化せずにひとつずつ表示するのが重要です。
@@ -170,7 +258,7 @@ dens.rep <- csDensity(my.genes, replicates = T)
 print(dens.rep)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-4.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-5.png) 
 
 
 density plot では平均や分散の情報を人間が印象で評価することになります。より定量的に判断できるよう boxplot を描きます。
@@ -180,7 +268,7 @@ boxp <- csBoxplot(my.genes)
 print(boxp)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-5.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-6.png) 
 
 
 サンプル平均はなく、すべてのサンプルひとつずつ表示すするには、replicates パラメータを TRUE にします。 
@@ -190,7 +278,7 @@ boxp.rep <- csBoxplot(my.genes, replicates = T)
 print(boxp.rep)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-6.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-7.png) 
 
 
 ここまでは技術的に実験が上手く行われているかを評価してきましたが、この情報が生物学的な差を捉えているかを調べます。もっとも簡単な方法は、サンプル間クラスタリングを行うことです。
@@ -199,7 +287,7 @@ print(boxp.rep)
 dend <- csDendro(my.genes)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-7.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-8.png) 
 
 {% highlight r %}
 print(dend)
@@ -220,7 +308,7 @@ scatter <- csScatter(my.genes, "hESC", "Fibroblasts", smooth = T)
 print(scatter)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-8.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-9.png) 
 
 
 ### ローカルなポジティブ・ネガティブコントロールの確認
@@ -310,7 +398,7 @@ den <- csDendro(my.geneset)
 ## Using tracking_id, sample_name as id variables
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-10.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-11.png) 
 
 
 次にそれらの遺伝子についてヒートマップを描き発現量のサンプル間での違いを定性的に確認します。
@@ -337,7 +425,7 @@ h <- csHeatmap(my.geneset, cluster = "both")
 print(h)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-111.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-121.png) 
 
 {% highlight r %}
 h.rep <- csHeatmap(my.geneset, cluster = "both", replicates = T)
@@ -361,7 +449,7 @@ h.rep <- csHeatmap(my.geneset, cluster = "both", replicates = T)
 print(h.rep)
 {% endhighlight %}
 
-![NA](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-112.png) 
+![NA](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-122.png) 
 
 
 これらの遺伝子の発現量がどの程度異なるかより定量的に評価するため、barplot を描きます。
@@ -377,7 +465,7 @@ print(bar)
 ## ymax not defined: adjusting position using y instead
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-12.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-13.png) 
 
 
 また発現量がどの程度異なるかを定量的に把握するためには、dot plot も有効です。
@@ -387,14 +475,14 @@ gl <- expressionPlot(my.geneset)
 print(gl)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-131.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-141.png) 
 
 {% highlight r %}
 gl.rep <- expressionPlot(my.geneset, replicates = TRUE)
 print(gl.rep)
 {% endhighlight %}
 
-![NA](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-132.png) 
+![NA](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-142.png) 
 
 
 ### より高度なデータ探索
@@ -493,7 +581,7 @@ k.means.plot <- csClusterPlot(k.means)
 print(k.means.plot)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-15.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-16.png) 
 
 k-means はクラスタの数をユーザに与える必要があります。クラスタ数を推定したい場合は、別の適切な方法を選択する必要があります。Kを予測するのが目的ならば、混合分布のパラメータ推定を行う必要があるでしょう。またそれぞれのクラスタの分散が同じという仮定があります。それが仮定できない場合は、k-means を使うべきではありません。
 
@@ -598,7 +686,7 @@ is(my.similar.expression)
 my.similar.expression
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-18.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-19.png) 
 
 
 *my.similar* が **CuffGeneSet**, **CuffFeatureSet** オブジェクトであることに注意しましょう。
@@ -608,7 +696,7 @@ my.similar.expression
 print(my.similar.expression)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-19.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-20.png) 
 
 
 
@@ -618,7 +706,7 @@ my.similar.expression.2 <- expressionPlot(my.similar, logMode = T, showErrorbars
 print(my.similar.expression.2)
 {% endhighlight %}
 
-![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-20.png) 
+![center](/images/NGS-R-Bioconductor-2nd/unnamed-chunk-21.png) 
 
 
 すべての遺伝子の発現量のテーブルを作成したい場合は以下のようにします。
@@ -719,7 +807,7 @@ sessionInfo()
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] colorspace_1.1-1 dichromat_1.2-4  digest_0.5.2     evaluate_0.4.2  
-##  [5] formatR_0.6      grid_2.15.1      labeling_0.1     lattice_0.20-6  
+##  [5] formatR_0.6      grid_2.15.1      labeling_0.1     lattice_0.20-10 
 ##  [9] memoise_0.1      munsell_0.3      proto_0.3-9.2    scales_0.2.1    
 ## [13] tools_2.15.1
 {% endhighlight %}

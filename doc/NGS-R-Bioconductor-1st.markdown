@@ -274,8 +274,7 @@ is(1)
 
 
 {% highlight text %}
-## [1] "numeric"          "vector"           "atomic"          
-## [4] "EnumerationValue" "vectorORfactor"
+## [1] "numeric" "vector"
 {% endhighlight %}
 
 
@@ -287,11 +286,8 @@ is("1")
 
 
 {% highlight text %}
-##  [1] "character"             "vector"               
-##  [3] "data.frameRowLabels"   "SuperClassMethod"     
-##  [5] "characterORconnection" "atomic"               
-##  [7] "characterORNULL"       "EnumerationValue"     
-##  [9] "characterORMIAME"      "vectorORfactor"
+## [1] "character"           "vector"              "data.frameRowLabels"
+## [4] "SuperClassMethod"
 {% endhighlight %}
 
 
@@ -397,8 +393,7 @@ is(z)
 
 
 {% highlight text %}
-## [1] "matrix"         "array"          "structure"      "vector"        
-## [5] "vectorORfactor"
+## [1] "matrix"    "array"     "structure" "vector"
 {% endhighlight %}
 
 
@@ -410,8 +405,7 @@ is(d)
 
 
 {% highlight text %}
-## [1] "data.frame"       "list"             "oldClass"        
-## [4] "data.frameOrNULL" "vector"
+## [1] "data.frame" "list"       "oldClass"   "vector"
 {% endhighlight %}
 
 
@@ -1207,6 +1201,7 @@ data(iris)
 * multicore package を利用して、練習問題1をマルチコアを使った並列計算するコードに直せ。
 
 ### 上級
+* 問題1をS3, S4, R5 オブジェクト指向で実装し直せ。
 * Rのスコープについて解説せよ。ヒント: (環境、レキシカルスコープ)
 * 総称関数とはなにか。*summary* か *plot* を例に説明せよ。
 * 上記の回答をすべて、R markdown で執筆し、[RPubs](http://www.rpubs.com/) にアップロードせよ。
@@ -1228,59 +1223,17 @@ sessionInfo()
 ## [1] ja_JP.UTF-8/ja_JP.UTF-8/ja_JP.UTF-8/C/ja_JP.UTF-8/ja_JP.UTF-8
 ## 
 ## attached base packages:
-## [1] splines   grid      datasets  utils     stats     graphics  grDevices
-## [8] methods   base     
+## [1] datasets  utils     stats     graphics  grDevices methods   base     
 ## 
 ## other attached packages:
-##  [1] BrainStars_1.0.0                   
-##  [2] RCurl_1.91-1                       
-##  [3] cummeRbund_1.99.2                  
-##  [4] fastcluster_1.1.6                  
-##  [5] reshape2_1.2.1                     
-##  [6] ggplot2_0.9.1                      
-##  [7] cluster_1.14.2                     
-##  [8] Hmisc_3.9-3                        
-##  [9] survival_2.36-14                   
-## [10] MotIV_1.10.0                       
-## [11] rGADEM_2.4.0                       
-## [12] seqLogo_1.22.0                     
-## [13] BSgenome.Mmusculus.UCSC.mm9_1.3.17 
-## [14] org.Mm.eg.db_2.7.1                 
-## [15] ChIPpeakAnno_2.4.0                 
-## [16] limma_3.12.1                       
-## [17] org.Hs.eg.db_2.7.1                 
-## [18] GO.db_2.7.1                        
-## [19] RSQLite_0.11.1                     
-## [20] DBI_0.2-5                          
-## [21] AnnotationDbi_1.18.1               
-## [22] BSgenome.Ecoli.NCBI.20080805_1.3.17
-## [23] BSgenome_1.24.0                    
-## [24] Biostrings_2.24.1                  
-## [25] multtest_2.12.0                    
-## [26] Biobase_2.16.0                     
-## [27] biomaRt_2.12.0                     
-## [28] gplots_2.11.0                      
-## [29] KernSmooth_2.23-8                  
-## [30] caTools_1.13                       
-## [31] bitops_1.0-4.1                     
-## [32] gdata_2.11.0                       
-## [33] gtools_2.7.0                       
-## [34] QuGAcomp_0.99.2                    
-## [35] GenomicRanges_1.8.12               
-## [36] IRanges_1.14.4                     
-## [37] BiocGenerics_0.2.0                 
-## [38] corrplot_0.60                      
-## [39] knitr_0.7.6                        
-## [40] stringr_0.6.1                      
-## [41] RColorBrewer_1.0-5                 
-## [42] MASS_7.3-20                        
-## [43] plyr_1.7.1                         
-## [44] BiocInstaller_1.4.7                
+## [1] ggplot2_0.9.1       knitr_0.7.6         stringr_0.6.1      
+## [4] RColorBrewer_1.0-5  MASS_7.3-20         plyr_1.7.1         
+## [7] BiocInstaller_1.4.7
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] colorspace_1.1-1 dichromat_1.2-4  digest_0.5.2     evaluate_0.4.2  
-##  [5] formatR_0.6      labeling_0.1     lattice_0.20-6   memoise_0.1     
-##  [9] munsell_0.3      proto_0.3-9.2    RJSONIO_0.98-1   scales_0.2.1    
-## [13] stats4_2.15.1    tools_2.15.1     XML_3.9-4
+##  [5] formatR_0.6      grid_2.15.1      labeling_0.1     memoise_0.1     
+##  [9] munsell_0.3      proto_0.3-9.2    reshape2_1.2.1   scales_0.2.1    
+## [13] tools_2.15.1
 {% endhighlight %}
 
